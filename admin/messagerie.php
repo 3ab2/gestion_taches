@@ -10,11 +10,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['name'])) {
-    header("Location: login.php"); // Redirection si non connecté
-    exit();
-}
+
 
 $nom_utilisateur = $_SESSION['name'];
 
@@ -205,12 +201,13 @@ $result = $conn->query($sql);
         TaskEasy
     </div>
     <div class="links">
-        <a href="messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
-        <a href="personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
-        <a href="admin/PHP/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
+        <a href="../admin/messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
+        <a href="../admin/personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
+        <a href="../admin/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
         <a href="index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
     </div>
 </div>
+    </div>
 
 <div class="main-container">
     <!-- Zone de saisie -->

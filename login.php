@@ -24,6 +24,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST["email"];
     $password = $_POST["password"];
 
+    if ($email === "admin2006@gmail.com" && $password === "Admin2025") {
+        $_SESSION["email"] = $email;
+        $_SESSION["is_admin"] = true;
+        header("Location: admin/dashboard.php");
+        exit;
+    }
+
     // Requête préparée pour récupérer l'utilisateur
     $sql = "SELECT id, name, password FROM users WHERE email = ?";
     $stmt = $conn->prepare($sql);
@@ -39,10 +46,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION["email"] = $email;
             $_SESSION["name"] = $user["name"];
             $_SESSION["id"] = $user["id"];
+            $_SESSION["is_admin"] = false;
             
-            header("Location: ../gestion_taches/admin/PHP/dashboard.php");
-             exit;
-
+            header("Location: user/dashboard.php");
+            exit;
         } else {
             $error = "Mot de passe incorrect.";
         }
@@ -285,6 +292,3 @@ $conn->close();
 </footer>
 
 </html>
-
-
-
