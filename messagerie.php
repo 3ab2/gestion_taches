@@ -240,6 +240,8 @@ $result = $conn->query($sql);
     </div>
 </div>
 
+<!-- Modal pour la réponse -->
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Fonction pour supprimer un message
