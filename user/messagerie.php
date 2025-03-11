@@ -198,19 +198,21 @@ $result = $conn->query($sql);
 <body>
      
 
-<!-- Barre de navigation -->
-<div class="navbar">
+   <!-- Barre de navigation -->
+   
+   <div class="navbar">
     <div class="brand">
         <span class="fas fa-tasks"></span>&nbsp;
         TaskEasy
     </div>
     <div class="links">
-        <a href="messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
-        <a href="personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
-        <a href="admin/PHP/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
+        <a href="../user/messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
+        <a href="../user/personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
+        <a href="../user/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
         <a href="index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
     </div>
 </div>
+    </div>
 
 <div class="main-container">
     <!-- Zone de saisie -->
