@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_personnel'])) {
         <a href="../admin/messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
         <a href="../admin/personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
         <a href="../admin/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
-        <a href="index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
+        <a href="http://localhost/gestion_taches/index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
     </div>
 </div>
     </div>

@@ -209,7 +209,7 @@ $result = $conn->query($sql);
         <a href="../user/messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
         <a href="../user/personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
         <a href="../user/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
-        <a href="index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
+        <a href="http://localhost/gestion_taches/index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
     </div>
 </div>
     </div>

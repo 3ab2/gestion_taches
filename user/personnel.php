@@ -1,47 +1,56 @@
 <?php
-$servername = "localhost";
-$username = "root";  // À adapter avec votre utilisateur de base de données
-$password = "";  // À adapter avec votre mot de passe
-$dbname = "gestion_taches";  // Remplacez par le nom de votre base de données
+session_start();
+if (!isset($_SESSION['email']) || $_SESSION['is_admin']) {
+    header('Location: ../login.php');
+    exit;
+}
 
-// Créer une connexion
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "gestion_taches";
+
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Vérifier la connexion
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Ajouter un nouveau personnel
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_personnel'])) {
-    $nom = $_POST['nom'];
-    $tache = $_POST['tache'];
-    $statut = $_POST['statut'];
-    $disponibilite = $_POST['disponibilite'];
+// Gérer les réactions emoji
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_reaction'])) {
+    $personnel_id = $_POST['personnel_id'];
+    $emoji = $_POST['emoji'];
+    $user_id = $_SESSION['id'];
 
-    $sql = "INSERT INTO personnel (nom, tache, statut, disponibilite)
-            VALUES ('$nom', '$tache', '$statut', '$disponibilite')";
+    // Vérifier si une réaction existe déjà
+    $check_sql = "SELECT * FROM reactions WHERE user_id = ? AND personnel_id = ?";
+    $check_stmt = $conn->prepare($check_sql);
+    $check_stmt->bind_param("ii", $user_id, $personnel_id);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
 
-    if ($conn->query($sql) === TRUE) {
-        echo "Nouveau personnel ajouté avec succès!";
+    if ($result->num_rows > 0) {
+        // Mettre à jour la réaction existante
+        $update_sql = "UPDATE reactions SET emoji = ? WHERE user_id = ? AND personnel_id = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("sii", $emoji, $user_id, $personnel_id);
+        $update_stmt->execute();
     } else {
-        echo "Erreur: " . $sql . "<br>" . $conn->error;
+        // Ajouter une nouvelle réaction
+        $insert_sql = "INSERT INTO reactions (user_id, personnel_id, emoji) VALUES (?, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_sql);
+        $insert_stmt->bind_param("iis", $user_id, $personnel_id, $emoji);
+        $insert_stmt->execute();
     }
 }
 
-// Supprimer un utilisateur
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $sql = "DELETE FROM personnel WHERE id = $id";
-    if ($conn->query($sql) === TRUE) {
-        echo "Utilisateur supprimé avec succès!";
-    } else {
-        echo "Erreur: " . $conn->error;
-    }
-}
-
-// Récupérer les utilisateurs existants
-$sql = "SELECT * FROM personnel";
+// Récupérer les utilisateurs existants avec leurs réactions
+$sql = "SELECT p.*, 
+        GROUP_CONCAT(r.emoji) as reactions,
+        GROUP_CONCAT(r.user_id) as reaction_users
+        FROM personnel p 
+        LEFT JOIN reactions r ON p.id = r.personnel_id 
+        GROUP BY p.id";
 $result = $conn->query($sql);
 ?>
 
@@ -50,15 +59,15 @@ $result = $conn->query($sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Utilisateurs</title>
+    <title>Liste du Personnel</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap">
     <style>
         body {
             font-family: 'Open Sans', sans-serif;
-            background-color: #fff;
-            color: #fff;
+            background-color: #f5f5f5;
+            color: #333;
             margin: 0;
             padding: 0;
         }
@@ -111,101 +120,104 @@ $result = $conn->query($sql);
         }
 
         .content {
-            margin-top: 20px;
+            margin: 20px auto;
             padding: 20px;
+            max-width: 1200px;
         }
 
         h1 {
             text-align: center;
             color: #333;
-        }
-
-        .explanation {
-            text-align: center;
             margin-bottom: 30px;
-            font-size: 1.1em;
-            color: #666;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
             background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        table, th, td {
-            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         th, td {
-            padding: 10px;
+            padding: 15px;
             text-align: left;
+            border-bottom: 1px solid #eee;
         }
 
         th {
-            background-color: #333;
+            background-color: #000;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .action-buttons button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .print-btn {
+            background-color: #4CAF50;
             color: white;
         }
 
-        td {
-            color: #333;
+        .download-btn {
+            background-color: #2196F3;
+            color: white;
         }
 
-        button {
-            padding: 5px 10px;
-            background-color: #333;
-            color: #fff;
+        .emoji-reactions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .emoji-btn {
+            background: none;
             border: none;
-            border-radius: 5px;
+            font-size: 1.2em;
             cursor: pointer;
-            font-size: 14px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
         }
 
-        button:hover {
-            background-color: #555;
+        .emoji-btn:hover {
+            background-color: #f0f0f0;
         }
 
-        .add-personnel-form {
+        .emoji-btn.active {
+            background-color: #e3e3e3;
+        }
+
+        .tools-bar {
+            margin-bottom: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 30px;
-        }
-
-        .add-personnel-form input {
-            padding: 10px;
-            margin-bottom: 10px;
-            width: 250px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .add-personnel-form button {
-           
-            width: 200px;
-            height: 40px;
-            display: flex;
-            align-self: center;
-            background-color: #28a745;
-        }
-
-        .add-personnel-form button:hover {
-            background-color: #218838;
-        }
-
-        .action-buttons i {
-            margin-right: 10px;
-            cursor: pointer;
+            justify-content: flex-end;
+            gap: 10px;
         }
     </style>
 </head>
 <body>
-
-   <!-- Barre de navigation -->
+      <!-- Barre de navigation -->
    
-   <div class="navbar">
+<div class="navbar">
     <div class="brand">
         <span class="fas fa-tasks"></span>&nbsp;
         TaskEasy
@@ -214,78 +226,98 @@ $result = $conn->query($sql);
         <a href="../user/messagerie.php"><span class="fas fa-comments"></span>&nbsp; Messagerie</a>
         <a href="../user/personnel.php"><span class="fas fa-users"></span>&nbsp; Personnel</a>
         <a href="../user/dashboard.php"><span class="fas fa-chart-line"></span>&nbsp; Tableau de bord</a>
-        <a href="index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
+        <a href="http://localhost/gestion_taches/index.php"><span class="fas fa-sign-out-alt"></span>&nbsp; Déconnexion</a>
     </div>
 </div>
     </div>
 
     <div class="content">
-        <h1>Gestion des Utilisateurs</h1>
-        <p class="explanation">
-            Sur cette page, vous pouvez gérer les utilisateurs, attribuer des tâches et suivre leur statut.
-        </p>
+        <h1>Liste du Personnel</h1>
+        
+        <div class="tools-bar">
+            <button onclick="window.print()" class="print-btn">
+                <i class="material-icons">print</i> Imprimer
+            </button>
+            <button onclick="exportToCSV()" class="download-btn">
+                <i class="material-icons">download</i> Télécharger CSV
+            </button>
+        </div>
 
-        <table>
+        <table id="personnelTable">
             <thead>
                 <tr>
                     <th>Nom</th>
                     <th>Tâche</th>
                     <th>Statut</th>
                     <th>Disponibilité</th>
-                    <th>Action</th>
+                    <th>Réactions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = $result->fetch_assoc()) { ?>
-                    <tr>
-                        <td><?php echo $row['nom']; ?></td>
-                        <td><?php echo $row['tache']; ?></td>
-                        <td><?php echo $row['statut']; ?></td>
-                        <td><?php echo $row['disponibilite']; ?></td>
+                <?php
+                if ($result->num_rows > 0) {
+                    while($row = $result->fetch_assoc()) {
+                        $reactions = $row['reactions'] ? explode(',', $row['reactions']) : [];
+                        $reaction_users = $row['reaction_users'] ? explode(',', $row['reaction_users']) : [];
                         
-                        <td class="action-buttons">
-                         <a href="personnel.php?delete=<?php echo $row['id']; ?>"><button><i class="fas fa-trash-alt"></i> Supprimer</button></a>
-                        <a href="modifier_personnel.php?id=<?php echo $row['id']; ?>"><button><i class="fas fa-edit"></i> Modifier</button></a>
-                        </td>
-                    </tr>
-                <?php } ?>
+                        echo "<tr>";
+                        echo "<td>" . htmlspecialchars($row['nom']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['tache']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['statut']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['disponibilite']) . "</td>";
+                        echo "<td class='emoji-reactions'>";
+                        
+                        // Emoji buttons
+                        $emojis = ['👍', '❤️', '👏', '🌟', '💪'];
+                        foreach ($emojis as $emoji) {
+                            $isActive = in_array($emoji, $reactions) && in_array($_SESSION['id'], $reaction_users);
+                            $activeClass = $isActive ? 'active' : '';
+                            echo "<form method='post' style='display: inline;'>";
+                            echo "<input type='hidden' name='personnel_id' value='" . $row['id'] . "'>";
+                            echo "<input type='hidden' name='emoji' value='" . $emoji . "'>";
+                            echo "<button type='submit' name='add_reaction' class='emoji-btn $activeClass' title='Réagir avec $emoji'>$emoji</button>";
+                            echo "</form>";
+                        }
+                        
+                        echo "</td>";
+                        echo "</tr>";
+                    }
+                }
+                ?>
             </tbody>
         </table>
-
-        <div class="add-personnel-form">
-            <h2>Ajouter un nouveau personnel</h2>
-            <form action="personnel.php" method="POST">
-                <input type="text" name="nom" placeholder="Nom" required>
-                <input type="text" name="tache" placeholder="Tâche" required>
-                <input type="text" name="statut" placeholder="Statut" required>
-                <input type="text" name="disponibilite" placeholder="Disponibilité" required>
-                <button type="submit" name="add_personnel">Ajouter Personnel</button>
-            </form>
-        </div>
     </div>
 
-   
+    <script>
+    function exportToCSV() {
+        const table = document.getElementById('personnelTable');
+        let csv = [];
+        
+        // Get headers
+        let headers = [];
+        for (let cell of table.rows[0].cells) {
+            headers.push(cell.textContent);
+        }
+        csv.push(headers.join(','));
+        
+        // Get data
+        for (let i = 1; i < table.rows.length; i++) {
+            let row = [];
+            for (let j = 0; j < table.rows[i].cells.length - 1; j++) { // Skip reactions column
+                row.push('"' + table.rows[i].cells[j].textContent + '"');
+            }
+            csv.push(row.join(','));
+        }
+        
+        // Download CSV
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'personnel_list.csv';
+        link.click();
+    }
+    </script>
 </body>
-<footer style=" color: #555; padding: 1em; text-align: center;  bottom: 0; width: 100%;">
-    <p>&copy; 2023 TaskEasy. Tous droits réservés.</p>
-    <div style="display: flex; justify-content: center; align-items: center;">
-        <a href="https://facebook.com/3ab2u.art" style="color: #555; margin: 0 0.5em;">
-            <i class="fab fa-facebook" style="font-size: 1.5em;"></i>
-        </a>
-        <a href="https://instagram.com/3ab2u.art" style="color: #555; margin: 0 0.5em;">
-            <i class="fab fa-instagram" style="font-size: 1.5em;"></i>
-        </a>
-        <a href="https://youtube.com/@3ab2u_54?si=f_yHSsOCx0flf3ii" style="color: #555; margin: 0 0.5em;">
-            <i class="fab fa-youtube" style="font-size: 1.5em;"></i>
-        </a>
-        <a href="https://github.com/3ab2" style="color: #555; margin: 0 0.5em;">
-            <i class="fab fa-github" style="font-size: 1.5em;"></i>
-        </a>
-    </div>
-</footer>
 </html>
-
-<?php
-// Fermer la connexion
-$conn->close();
-?>
+<?php $conn->close(); ?>
